@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@v3
+
+      # Windows: MSYS2 + MinGW-w64 (kostenlos, für kommerziellen Einsatz geeignet)
+      - if: matrix.os == 'windows-latest'
+        name: Setup MSYS2 / MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+
+      - if: matrix.os == 'windows-latest'
+        run: pacman -S --noconfirm mingw-w64-x86_64-toolchain
+
+      - name: Configure
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            cmake -G "MSYS Makefiles" -S . -B build
+          else
+            cmake -S . -B build
+          fi
+
+      - name: Build
+        run: cmake --build build --config Release -- -j$(nproc)
+
+      - name: Run
+        run: |
+          cd build
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            ./hello_world.exe
+          else
+            ./hello_world
+          fi

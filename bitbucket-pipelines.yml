@@ -1,0 +1,15 @@
+image: ubuntu:22.04
+
+pipelines:
+  default:
+    - step:
+        name: Build on Linux
+        caches:
+          - apt
+          - cmake
+        script:
+          - apt-get update && apt-get install -y build-essential cmake
+          - mkdir build && cd build
+          - cmake ..
+          - cmake --build . -- -j$(nproc)
+          - ./hello_world
